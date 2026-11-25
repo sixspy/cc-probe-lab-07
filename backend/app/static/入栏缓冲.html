@@ -16,19 +16,38 @@
     <div class="门槛条" id="门槛条"></div>
     <header class="顶牌" style="margin-bottom:10px">
       <h1 style="font-size:22px">入栏缓冲</h1>
-      <div class="骨">过门槛、尚未结栏汇总的在途集合。</div>
+      <div class="骨">过门槛、尚未结栏汇总的在途集合；结栏时异站片禁混，拒拼或入影子归档。</div>
     </header>
 
+    <div class="禁混条" id="禁混条" style="margin-bottom:10px"></div>
     <section class="卷">
-      <div class="表绕"><table><thead><tr><th>报文编号</th><th>站点</th><th>指标</th><th>读数</th><th>栏号</th><th>命运</th></tr></thead><tbody id="表"></tbody></table></div>
+      <div id="站界预览" class="只读框 淡底 圆角8 垫8 侧注">读取站界预览…</div>
+    </section>
+    <section class="卷">
+      <div class="表绕"><table><thead><tr><th>报文编号</th><th>站点</th><th>指标</th><th>读数</th><th>栏号</th><th>命运</th><th>站界</th></tr></thead><tbody id="表"></tbody></table></div>
     </section>
     <script>
     (async () => {
-      const rows = await 探栏.getJSON("/api/入栏缓冲");
+      const [rows, 预览] = await Promise.all([
+        探栏.getJSON("/api/入栏缓冲"),
+        探栏.getJSON("/api/结栏/预览"),
+      ]);
+      const pv = document.getElementById("站界预览");
+      if (预览["在栏"] === 0) {
+        pv.textContent = "当前栏无在栏缓冲。";
+      } else {
+        const 锚 = 预览["锚站"];
+        pv.innerHTML = `禁混形态：${探栏.安全文本(预览["禁混形态名"] || "基线不拦")} ·
+          本站（锚站）：${锚 ? 探栏.安全文本(锚) : "未钉"} ·
+          在栏站点集：${(预览["站点集"] || []).map(探栏.安全文本).join("、")} ·
+          ${预览["含异站片"] ? 探栏.徽章("含异站片，结栏禁混", "warn") : 探栏.徽章("单站成片", "ok")}`;
+      }
       const tb = document.getElementById("表");
-      if (!rows.length) { tb.innerHTML = `<tr><td colspan="6">${探栏.空态("缓冲为空。")}</td></tr>`; return; }
+      if (!rows.length) { tb.innerHTML = `<tr><td colspan="7">${探栏.空态("缓冲为空。")}</td></tr>`; return; }
       for (const r of rows) {
-        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.读数}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.徽章(r.命运)}</td>`));
+        const 异 = 预览["锚站"] && r.站点键 !== 预览["锚站"] && r.命运 === "在栏";
+        const 界 = 异 ? 探栏.徽章("异站片", "warn") : 探栏.徽章("本站", "ok");
+        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.报文编号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.读数}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.徽章(r.命运)}</td><td>${界}</td>`));
       }
     })();
     </script>
@@ -51,6 +70,7 @@
     try {
       const o = await 探栏.getJSON("/api/概览");
       探栏.渲染门槛(document.getElementById("门槛条"), o.栏规 || {});
+      探栏.渲染禁混条(document.getElementById("禁混条"));
     } catch (e) {}
   })();
   </script>

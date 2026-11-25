@@ -16,24 +16,39 @@
     <div class="门槛条" id="门槛条"></div>
     <header class="顶牌" style="margin-bottom:10px">
       <h1 style="font-size:22px">站点汇总账</h1>
-      <div class="骨">结栏后按站点+指标物化的汇总。</div>
+      <div class="骨">结栏后按站点+指标物化的汇总；正式集只含本站，异站影子不充正式。</div>
     </header>
 
+    <div class="禁混条" id="禁混条" style="margin-bottom:10px"></div>
     <section class="卷">
-      <div class="工具"><button class="按钮 青" id="结">结当前栏</button></div>
-      <div class="表绕"><table><thead><tr><th>汇总编号</th><th>栏号</th><th>站点</th><th>指标</th><th>报文数</th><th>均值</th></tr></thead><tbody id="表"></tbody></table></div>
+      <div class="工具"><button class="按钮 青" id="结">结当前栏</button>
+        <span class="侧注">禁混：异站片在甲形态拒拼留栏，在乙形态进下方影子归档</span></div>
+      <div class="表绕"><table><thead><tr><th>汇总编号</th><th>栏号</th><th>站点</th><th>指标</th><th>报文数</th><th>均值</th><th>轨道</th></tr></thead><tbody id="表"></tbody></table></div>
+    </section>
+    <section class="卷">
+      <h2>异站影子归档（只读，不充正式）</h2>
+      <div class="表绕"><table><thead><tr><th>影子编号</th><th>栏号</th><th>站点</th><th>指标</th><th>报文数</th><th>均值</th></tr></thead><tbody id="影表"></tbody></table></div>
     </section>
     <script>
     async function 刷() {
-      const rows = await 探栏.getJSON("/api/站点汇总账");
+      const [rows, 影子] = await Promise.all([
+        探栏.getJSON("/api/站点汇总账"),
+        探栏.getJSON("/api/站界/影子归档"),
+      ]);
       const tb = document.getElementById("表"); tb.innerHTML = "";
-      if (!rows.length) { tb.innerHTML = `<tr><td colspan="6">${探栏.空态("尚无汇总。入栏后点结当前栏。")}</td></tr>`; return; }
+      if (!rows.length) { tb.innerHTML = `<tr><td colspan="7">${探栏.空态("尚无正式汇总。入栏后点结当前栏。")}</td></tr>`; }
       for (const r of rows) {
-        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.汇总编号)}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.报文数}</td><td>${r.均值}</td>`));
+        tb.appendChild(探栏.行(`<td>${探栏.安全文本(r.汇总编号)}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.报文数}</td><td>${r.均值}</td><td>${探栏.徽章("正式","好")}</td>`));
+      }
+      const yb = document.getElementById("影表"); yb.innerHTML = "";
+      if (!影子.length) { yb.innerHTML = `<tr><td colspan="6">${探栏.空态("无异站影子归档（单站成片或甲形态拒拼）。")}</td></tr>`; return; }
+      for (const r of 影子) {
+        yb.appendChild(探栏.行(`<td>${探栏.安全文本(r.汇总编号)}</td><td>${探栏.安全文本(r.栏号)}</td><td>${探栏.安全文本(r.站点键)}</td><td>${探栏.安全文本(r.指标键)}</td><td>${r.报文数}</td><td>${r.均值}</td>`));
       }
     }
-    document.getElementById("结").onclick = async () => { await 探栏.postJSON("/api/结栏/跑"); await 刷(); };
+    document.getElementById("结").onclick = async () => { await 探栏.postJSON("/api/结栏/跑"); await 刷(); await 探栏.渲染禁混条(document.getElementById("禁混条")); };
     刷();
+    探栏.渲染禁混条(document.getElementById("禁混条"));
     </script>
 
   </div>
@@ -54,6 +69,7 @@
     try {
       const o = await 探栏.getJSON("/api/概览");
       探栏.渲染门槛(document.getElementById("门槛条"), o.栏规 || {});
+      探栏.渲染禁混条(document.getElementById("禁混条"));
     } catch (e) {}
   })();
   </script>

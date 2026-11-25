@@ -71,7 +71,8 @@ def 汇总列表(限制: int = 200) -> list[dict]:
         return [
             dict(r)
             for r in conn.execute(
-                "SELECT * FROM 站点汇总账 ORDER BY 物化时 DESC LIMIT ?", (限制,)
+                "SELECT * FROM 站点汇总账 WHERE 命运='已汇总' ORDER BY 物化时 DESC LIMIT ?",
+                (限制,),
             ).fetchall()
         ]
     finally:
@@ -110,7 +111,7 @@ def 概览() -> dict:
         return {
             "观测报文": conn.execute("SELECT COUNT(*) AS c FROM 观测报文").fetchone()["c"],
             "在栏": conn.execute("SELECT COUNT(*) AS c FROM 入栏缓冲 WHERE 命运='在栏'").fetchone()["c"],
-            "站点汇总": conn.execute("SELECT COUNT(*) AS c FROM 站点汇总账").fetchone()["c"],
+            "站点汇总": conn.execute("SELECT COUNT(*) AS c FROM 站点汇总账 WHERE 命运='已汇总'").fetchone()["c"],
             "坏点": conn.execute("SELECT COUNT(*) AS c FROM 坏点匣").fetchone()["c"],
             "栏规": 栏规(),
         }

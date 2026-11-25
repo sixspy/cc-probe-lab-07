@@ -86,8 +86,39 @@ function 填命运字典(el, dict) {
     `<div class="只读框 上距8"><b class="铜字">${安全文本(k)}</b> · ${安全文本(v)}</div>`
   ).join("");
 }
+async function 渲染禁混条(el) {
+  if (!el) return;
+  try {
+    const [规, 裁决] = await Promise.all([
+      getJSON("/api/栏规"),
+      getJSON("/api/站界/裁决"),
+    ]);
+    const 形 = 规["禁混汇总"] || "关";
+    const 形名 = { 甲: "切流账册拒拼", 乙: "双写两轨归档" }[形] || "基线不拦";
+    const 形徽 = 形 === "关" ? 徽章("禁混未启用", "warn") : 徽章(`禁混·${安全文本(形)} ${安全文本(形名)}`, "ok");
+    const 锚 = 规["锚站"] ? 徽章(`本站 ${安全文本(规["锚站"])}`, "ok") : 徽章("本站未钉（默认首站）");
+    const 正式 = (裁决["正式站点集"] || []).length
+      ? 裁决["正式站点集"].map((s) => 徽章(安全文本(s), "ok")).join(" ")
+      : 安全文本("（尚无正式物化）");
+    const 异站 = (裁决["异站站点集"] || []).length
+      ? 裁决["异站站点集"].map((s) => 徽章(安全文本(s), "warn")).join(" ")
+      : 安全文本("（无异站片）");
+    el.innerHTML = `
+      <div class="只读框 淡底 圆角8 垫8">
+        <div class="横排" style="gap:8px;align-items:center;flex-wrap:wrap">
+          ${形徽} ${锚}
+          <b class="铜字">跨站禁混</b>
+          <span>正式站点集：${正式}</span>
+          <span>异站站点集：${异站}</span>
+          <span class="侧注">异站拒拼/影子归档，影子不充正式；汇总站点键与缓冲同票</span>
+        </div>
+      </div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="只读框">禁混条读取失败：${安全文本(String(e))}</div>`;
+  }
+}
 window.探栏 = {
   getJSON, postJSON, 行, 徽章, 空态, 安全文本, 命运色,
-  渲染水位, 渲染门槛, 渲染批次表,
+  渲染水位, 渲染门槛, 渲染批次表, 渲染禁混条,
   装载摘要文, 结栏摘要文, 贯验摘要文, 填命运字典,
 };

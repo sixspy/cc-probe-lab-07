@@ -1,7 +1,7 @@
 from pathlib import Path
 from quart import Quart, jsonify, request, send_from_directory, redirect
 from app import seed
-from app.services import 目录, 装载, 结栏, 贯验, 夹具, 统计, 说明
+from app.services import 目录, 装载, 结栏, 贯验, 夹具, 统计, 说明, 站界
 
 _STATIC = Path(__file__).resolve().parent / "static"
 app = Quart(__name__)
@@ -107,6 +107,30 @@ async def api_贯验快照():
     return jsonify(贯验.只读快照())
 
 
+@app.get("/api/站界/裁决")
+async def api_站界裁决():
+    return jsonify(站界.读裁决())
+
+
+@app.get("/api/站界/影子归档")
+async def api_站界影子():
+    return jsonify(站界.读影子归档())
+
+
+@app.post("/api/站界/换站")
+async def api_换站():
+    body = await request.get_json(force=True, silent=True) or {}
+    新锚站 = str(body.get("锚站") or "").strip()
+    if not 新锚站:
+        return jsonify({"错误": "缺锚站"}), 400
+    try:
+        return jsonify(站界.换站(新锚站))
+    except ValueError as e:
+        return jsonify({"错误": str(e)}), 400
+    except 站界.站界占用 as e:
+        return jsonify({"错误": str(e)}), 409
+
+
 @app.get("/api/夹具/预检")
 async def api_夹具预检():
     return jsonify(夹具.全部预检())
@@ -157,6 +181,11 @@ async def api_装载摘要():
 @app.get("/api/统计/结栏摘要")
 async def api_结栏摘要():
     return jsonify(统计.结栏批次摘要())
+
+@app.errorhandler(站界.站界占用)
+async def _站界占用处理(e):
+    return jsonify({"错误": str(e)}), 409
+
 
 @app.get("/api/空桩")
 async def api_空桩():

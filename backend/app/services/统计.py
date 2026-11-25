@@ -63,7 +63,7 @@ def 按指标汇总() -> dict:
     conn = 连接()
     try:
         rows = conn.execute(
-            "SELECT 指标键, COUNT(*) AS c, COALESCE(AVG(均值),0) AS 均 FROM 站点汇总账 GROUP BY 指标键"
+            "SELECT 指标键, COUNT(*) AS c, COALESCE(AVG(均值),0) AS 均 FROM 站点汇总账 WHERE 命运='已汇总' GROUP BY 指标键"
         ).fetchall()
         return {r["指标键"]: {"笔数": r["c"], "均值": r["均"]} for r in rows}
     finally:
